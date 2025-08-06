@@ -15,7 +15,6 @@ COMMAND="solana-test-validator \
   --clone RestkWeAVL8fRGgzhfeoqFhsqKRchg6aa1XrcH96z4Q \
   --clone cmtDvXumGCrqC1Age74AVPhSRVXJMd8PJS91L8KbNCK \
   --clone noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV \
-  --account-dir ./accounts/
   --reset"
 
 # Append any additional arguments passed to the script

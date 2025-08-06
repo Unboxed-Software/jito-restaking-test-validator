@@ -7,8 +7,19 @@ Before building your Node Consensus Network (NCN), you'll need:
 - A Unix-based operating system (macOS, Linux)
 - Rust and Cargo installed (minimum version 1.81)
 - Solana CLI tools (minimum version 1.16)
+- SPL Token CLI (`spl-token-cli`)
 - Basic familiarity with Solana program development
-- A funded wallet on Solana devnet for testing
+- A local test validator environment (airdrop will fund accounts locally)
+
+## Quick Start (Automatic Local Setup)
+
+To bootstrap a complete local environment (validator + configs + NCN + 3 operators + token + vault + handshakes + delegations), run:
+
+```bash
+./run.sh
+```
+
+See `README.md` for details about what this script does and the generated artifacts (for example, `setup_summary.txt` and `handshake_commands.sh`).
 
 ## Install the Jito Restaking CLI
 
@@ -32,25 +43,34 @@ Verify installation with:
 jito-restaking-cli --version
 ```
 
-You should see the version number displayed as 1.0.0, confirming successful installation.
+You should see a version string printed, confirming successful installation.
 
 ## Configure Your Solana Environment
 
-Set up your Solana CLI to work with devnet:
+Set up your Solana CLI to work with a local test validator:
 
 ```bash
-# Configure Solana CLI to use devnet
+# Configure Solana CLI to use the local test validator
 solana config set --url l
 
 # Check your configuration
 solana config get
 ```
 
-Fund your wallet with devnet SOL:
+Fund your wallet with local SOL:
 
 ```bash
 # Request an airdrop (can be repeated if needed)
-solana airdrop 2
+solana airdrop 100
+```
+
+## Initialize Program Configs (once per cluster)
+
+Initialize the program configs used by the CLI:
+
+```bash
+jito-restaking-cli restaking config initialize
+jito-restaking-cli vault config initialize 100 3ogGQ7nFX6nCa9bkkZ6hwud6VaEQCekCCmNj6ZoWh8MF
 ```
 
 # Creating Admin Keypairs
@@ -65,7 +85,7 @@ This keypair will control your Node Consensus Network and define the rules of yo
 
 ```bash
 solana-keygen new --outfile "keys/ncn/ncn-admin.json" --no-bip39-passphrase
-solana airdrop 2 --keypair "keys/ncn/ncn-admin.json"
+solana airdrop 100 --keypair "keys/ncn/ncn-admin.json"
 ```
 
 ### Vault Admin Keypair
@@ -74,7 +94,7 @@ This keypair will control your Vault account, which manages staked tokens and is
 
 ```bash
 solana-keygen new --outfile "keys/vault/vault-admin.json" --no-bip39-passphrase
-solana airdrop 2 --keypair "keys/vault/vault-admin.json"
+solana airdrop 100 --keypair "keys/vault/vault-admin.json"
 ```
 
 ### Operator Admin Keypair
@@ -85,9 +105,9 @@ This keypair represents a node runner in your network. The Operator admin contro
 solana-keygen new --outfile "keys/operators/operator1-admin.json" --no-bip39-passphrase
 solana-keygen new --outfile "keys/operators/operator2-admin.json" --no-bip39-passphrase
 solana-keygen new --outfile "keys/operators/operator3-admin.json" --no-bip39-passphrase
-solana airdrop 2 --keypair "keys/operators/operator1-admin.json"
-solana airdrop 2 --keypair "keys/operators/operator2-admin.json"
-solana airdrop 2 --keypair "keys/operators/operator3-admin.json"
+solana airdrop 100 --keypair "keys/operators/operator1-admin.json"
+solana airdrop 100 --keypair "keys/operators/operator2-admin.json"
+solana airdrop 100 --keypair "keys/operators/operator3-admin.json"
 ```
 
 ## Initializing On-Chain Accounts
@@ -152,7 +172,7 @@ Take note of the address listed here: `Initializing NCN: C5xRZSJM2nQf2X67eyNrjVX
 Operators are the entities that run nodes for your network. Each Operator account tracks its participation in various NCNs and the stake it receives from Vaults.
 
 ```bash
-jito-restaking-cli restaking operator initialize 1000 --signer ./keys/operator/operator-admin.json
+jito-restaking-cli restaking operator initialize 1000 --signer ./keys/operators/operator1-admin.json
 ```
 
 The parameter `1000` represents the operator fee in basis points (10%). This is the percentage of rewards the operator will take for running nodes in your network.
@@ -247,7 +267,7 @@ Now you can initialize the Vault:
 ```bash
 jito-restaking-cli \
     --signer ./keys/vault/vault-admin.json \
-    vault vault initialize '<TOKEN_ADDRESS>' 1000 1000 1000 9 100000000000
+    vault vault initialize '<TOKEN_ADDRESS>' 1000 1000 1000 9 1000000000
 ```
 
 The parameters are:
@@ -257,7 +277,7 @@ The parameters are:
 - Withdrawal fee in basis points (10%)
 - Reward fee in basis points (10%)
 - Token decimals (9)
-- Initial token amount to lock in the Vault in the smallest token amount (e.g., 100 tokens which is (100_000_000_000) of the smallest token amount)
+- Initial token amount to lock in the Vault in the smallest unit (e.g., 1 token with 9 decimals is `1_000_000_000`)
 
 ---
 
@@ -331,8 +351,7 @@ First, initialize the connection state between your NCN and each Operator:
 
 ```bash
 # Initialize NCN Operator State
-jito-restaking-cli \
-    restaking ncn initialize-ncn-operator-state \
+jito-restaking-cli restaking ncn initialize-ncn-operator-state \
     "<NCN_ACCOUNT_ADDRESS>" \
     "<OPERATOR_ACCOUNT_ADDRESS>" \
     --signer ./keys/ncn/ncn-admin.json # NCN Admin keypair
@@ -429,7 +448,7 @@ jito-restaking-cli \
     restaking operator operator-warmup-ncn \
     "<OPERATOR_ACCOUNT_ADDRESS>" \
     "<NCN_ACCOUNT_ADDRESS>" \ 
-    --signer ./keys/operator/operator-admin.json # Operator Admin keypair
+    --signer <OPERATOR_ADMIN_KEYPAIR> # e.g., ./keys/operators/operator1-admin.json
 ```
 
 ### Operator to Vault Connections
@@ -441,7 +460,7 @@ jito-restaking-cli \
     restaking operator initialize-operator-vault-ticket \
     "<OPERATOR_ACCOUNT_ADDRESS>" \
     "<VAULT_ACCOUNT_ADDRESS>" \ 
-    --signer ./keys/operator/operator-admin.json # Operator Admin keypair
+    --signer <OPERATOR_ADMIN_KEYPAIR> # e.g., ./keys/operators/operator1-admin.json
 ```
 
 Warm up the connection:
@@ -451,7 +470,7 @@ jito-restaking-cli \
     restaking operator warmup-operator-vault-ticket \
     "<OPERATOR_ACCOUNT_ADDRESS>" \
     "<VAULT_ACCOUNT_ADDRESS>" \ 
-    --signer ./keys/operator/operator-admin.json # Operator Admin keypair
+    --signer <OPERATOR_ADMIN_KEYPAIR> # e.g., ./keys/operators/operator1-admin.json
 ```
 
 ## Vault Opt-ins
@@ -495,6 +514,9 @@ spl-token mint "<TOKEN_ADDRESS>" 3000
 
 # Mint Vault Receipt Tokens (VRTs) (i.e deposit stake to the vault)
 jito-restaking-cli vault vault mint-vrt "<VAULT_ADDRESS>" 3000000000000 0
+
+# Update the vault balance before operator delegations
+jito-restaking-cli vault vault update-vault-balance "<VAULT_ADDRESS>" --signer ./keys/vault/vault-admin.json
 ```
 
 The parameters are:
@@ -545,7 +567,7 @@ jito-restaking-cli \
     vault vault delegate-to-operator \
     "<VAULT_ACCOUNT_ADDRESS>" \
     "<OPERATOR_ACCOUNT_ADDRESS>" \
-    1500000000000 \
+    500000000000 \
     --signer ./keys/vault/vault-admin.json
 ```
 
@@ -553,8 +575,7 @@ The parameters are:
 
 - `<VAULT_ADDRESS>`: the vault that you will delegate stake, in this case the vault that you initiated earlier
 - `<OPERATOR_ADDRESS>`: the operator that you want to delegate to, in this case the operator that you initiated earlier
-- Amount of the deposit in the smallest token unite (so for 1500 tokens of 9 decimals it will be 1_500_000_000_000)
-- Minimum amount of VRT out
+- Amount in the smallest token unit (for 500 tokens with 9 decimals it is `500_000_000_000`)
 
 Results:
 
@@ -603,3 +624,8 @@ If you encounter errors during the handshake process:
 2. **Verify Addresses**: Double-check that you're using the correct addresses for each component
 3. **Sequence Matters**: Follow the initialization and warm-up steps in the correct order
 4. **Funding**: Ensure all accounts have sufficient SOL for transaction fees
+
+## Next Steps
+
+- For a fully automated local workflow, use `./run.sh` (see `README.md`).
+- Review generated artifacts like `setup_summary.txt` and `handshake_commands.sh` for addresses and exact commands used by the scripts.
