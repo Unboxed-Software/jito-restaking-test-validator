@@ -135,7 +135,7 @@ Configures and starts the Solana test validator with:
 Comprehensive setup script that:
 
 - Validates environment prerequisites
-- Generates Solana and BN254 keypairs for all components
+- Generates Solana keypairs for all components
 - Initializes NCN with proper configuration
 - Creates and initializes 3 operators
 - Sets up SPL token and vault
@@ -160,7 +160,6 @@ After successful execution, you'll have:
 - **NCN Admin**: `./keys/ncn/ncn-admin.json`
 - **Vault Admin**: `./keys/vault/vault-admin.json`
 - **Operator Admins**: `./keys/operators/operator{1,2,3}-admin.json`
-- **BN254 Keypairs**: For cryptographic operations (private keys and public key sets)
 
 ### Addresses
 
@@ -226,4 +225,3 @@ Once setup is complete, you can:
 - [Jito Restaking Documentation](https://jito-foundation.gitbook.io/restaking)
 - [Solana Documentation](https://docs.solana.com/)
 - [Jito Foundation GitHub](https://github.com/jito-foundation/restaking)
-
