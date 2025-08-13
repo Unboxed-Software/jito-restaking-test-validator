@@ -40,7 +40,7 @@ new_w=$((current_slot + slots_to_advance))
 
 log_info "Slots to advance: $slots_to_advance"
 log_info "Target slot after restart: $new_w"
-log_info "This will simulate advancing time by approximately $(($slots_to_advance / 432)) epochs"
+log_info "This will simulate advancing time by approximately $(($slots_to_advance / 432000)) epochs"
 
 # Kill the current validator process
 log_info "Stopping current solana-test-validator process..."

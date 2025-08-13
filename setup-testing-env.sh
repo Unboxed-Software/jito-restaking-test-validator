@@ -6,7 +6,7 @@
 # This script sets up a complete Jito Restaking Network environment including:
 # 1. Environment prerequisites validation
 # 2. Solana local validator configuration
-# 3. Keypair generation (Solana + BN254 for operators)
+# 3. Keypair generation
 # 4. Program configuration initialization (restaking + vault)
 # 5. Network Component Node (NCN) initialization
 # 6. Operator initialization (3 operators)
@@ -258,7 +258,7 @@ check_prerequisites() {
 	log_info "Checking Jito Restaking CLI..."
 	if ! command -v jito-restaking-cli &>/dev/null; then
 		log_error "Jito Restaking CLI is not installed. Please install it first."
-		log_info "Install it with: cargo install --path ./cli --bin jito-restaking-cli"
+		log_info "Install it from https://github.com/jito-foundation/restaking"
 		exit 1
 	fi
 	log_success "Jito Restaking CLI found: $(jito-restaking-cli --version)"
@@ -328,7 +328,7 @@ create_directories() {
 	log_info "Creating Vault directory for vault administration files..."
 	mkdir -p keys/vault
 
-	# Create directory for Operator keypairs (both Solana and BN254)
+	# Create directory for Operator keypairs
 	log_info "Creating Operators directory for operator administration files..."
 	mkdir -p keys/operators
 
@@ -340,90 +340,15 @@ create_directories() {
 	log_info "Created directories:"
 	log_info "  - keys/ncn/        (NCN keypairs and pubkeys)"
 	log_info "  - keys/vault/      (Vault admin keypairs and addresses)"
-	log_info "  - keys/operators/  (Operator admin + BN254 keypairs)"
+	log_info "  - keys/operators/  (Operator admin)"
 	log_info "  - logs/            (Execution logs and error tracking)"
-}
-
-# ======================================================================
-# BN254 KEYPAIR GENERATION FOR OPERATORS
-# ======================================================================
-# Generates BN254 elliptic curve keypairs required for operators in the
-# Jito Restaking Network. These are used for cryptographic operations
-# specific to restaking protocols.
-
-generate_bn254_keypair() {
-	local operator_id="$1"
-	local bn254_private_key_file="keys/operators/operator$operator_id-bn254-private.key"
-	local bn254_pubkeys_file="keys/operators/operator$operator_id-bn254-pubkeys.json"
-
-	log_info "Generating BN254 keypair for Operator $operator_id..."
-
-	# Check if keypair already exists to avoid overwriting
-	if [[ -f "$bn254_private_key_file" && -f "$bn254_pubkeys_file" ]]; then
-		log_warning "Operator $operator_id BN254 keypair already exists, skipping generation"
-		log_info "Existing files: $bn254_private_key_file, $bn254_pubkeys_file"
-		return 0
-	fi
-
-	log_info "Creating new BN254 keypair for cryptographic operations..."
-
-	# Generate a cryptographically secure 32-byte private key (256 bits)
-	log_info "Generating 256-bit private key using OpenSSL..."
-	openssl rand -hex 32 >"$bn254_private_key_file"
-	local private_key=$(cat "$bn254_private_key_file")
-
-	# NOTE: This is a MOCK implementation for development/testing purposes
-	# In a production environment, you would use a proper BN254 elliptic curve
-	# library to derive G1 and G2 public keys from the private key
-	log_warning "Using MOCK BN254 public key generation (for testing only)"
-
-	# Generate mock G1 public key coordinates (2 field elements)
-	log_info "Generating G1 public key coordinates..."
-	local g1_x=$(openssl rand -hex 32)
-	local g1_y=$(openssl rand -hex 32)
-
-	# Generate mock G2 public key coordinates (4 field elements)
-	log_info "Generating G2 public key coordinates..."
-	local g2_x1=$(openssl rand -hex 32)
-	local g2_x2=$(openssl rand -hex 32)
-	local g2_y1=$(openssl rand -hex 32)
-	local g2_y2=$(openssl rand -hex 32)
-
-	# Create JSON file containing all keypair information
-	log_info "Creating keypair metadata file..."
-	cat >"$bn254_pubkeys_file" <<EOF
-{
-  "operator_id": $operator_id,
-  "private_key_file": "operator$operator_id-bn254-private.key",
-  "bn254_keypair": {
-    "private_key": "$private_key",
-    "public_keys": {
-      "g1": {
-        "x": "$g1_x",
-        "y": "$g1_y"
-      },
-      "g2": {
-        "x": ["$g2_x1", "$g2_x2"],
-        "y": ["$g2_y1", "$g2_y2"]
-      }
-    }
-  },
-  "generated_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-  "note": "MOCK IMPLEMENTATION: In production, use proper BN254 curve operations to derive G1/G2 public keys from the private key."
-}
-EOF
-
-	log_success "BN254 keypair generated successfully for Operator $operator_id"
-	log_info "Private key saved to: $bn254_private_key_file"
-	log_info "Public keys and metadata saved to: $bn254_pubkeys_file"
 }
 
 # ======================================================================
 # KEYPAIR GENERATION AND FUNDING
 # ======================================================================
 # Generates all necessary Solana keypairs for NCN, Vault, and Operators,
-# plus BN254 keypairs for operators. Also ensures all keypairs have
-# sufficient SOL for operations.
+# Also ensures all keypairs have sufficient SOL for operations.
 
 generate_keypairs() {
 	log_info "=== STEP 4: GENERATING AND FUNDING KEYPAIRS ==="
@@ -466,9 +391,9 @@ generate_keypairs() {
 	fi
 
 	# ===================================================
-	# Operator Admin Keypairs (Solana) + BN254 Keypairs
+	# Operator Admin Keypairs (Solana)
 	# ===================================================
-	log_info "Processing 3 Operator keypairs (Solana admin + BN254 cryptographic)..."
+	log_info "Processing 3 Operator keypairs..."
 	for i in {1..3}; do
 		log_info "--- Processing Operator $i ---"
 
@@ -488,20 +413,12 @@ generate_keypairs() {
 			log_success "Operator $i admin keypair generated and funded successfully"
 		fi
 
-		# Generate BN254 keypair for cryptographic operations
-		log_info "Processing Operator $i BN254 cryptographic keypair..."
-		generate_bn254_keypair "$i"
-
-		log_success "Operator $i keypair setup completed (Solana + BN254)"
 	done
 
 	log_success "All keypairs generated and funded successfully!"
 	log_info "Generated keypairs summary:"
 	log_info "  - NCN admin keypair:       keys/ncn/ncn-admin.json"
 	log_info "  - Vault admin keypair:     keys/vault/vault-admin.json"
-	log_info "  - Operator 1 admin:        keys/operators/operator1-admin.json + BN254"
-	log_info "  - Operator 2 admin:        keys/operators/operator2-admin.json + BN254"
-	log_info "  - Operator 3 admin:        keys/operators/operator3-admin.json + BN254"
 }
 
 # ======================================================================
@@ -996,12 +913,6 @@ validate_setup() {
 		"./keys/operators/operator1-pubkey.txt"
 		"./keys/operators/operator2-pubkey.txt"
 		"./keys/operators/operator3-pubkey.txt"
-		"./keys/operators/operator1-bn254-private.key"
-		"./keys/operators/operator2-bn254-private.key"
-		"./keys/operators/operator3-bn254-private.key"
-		"./keys/operators/operator1-bn254-pubkeys.json"
-		"./keys/operators/operator2-bn254-pubkeys.json"
-		"./keys/operators/operator3-bn254-pubkeys.json"
 	)
 
 	for file in "${files[@]}"; do
@@ -1028,10 +939,6 @@ Operators:
 - Operator 2: $(cat ./keys/operators/operator2-pubkey.txt)
 - Operator 3: $(cat ./keys/operators/operator3-pubkey.txt)
 
-BN254 Keypairs:
-- Operator 1 BN254: ./keys/operators/operator1-bn254-pubkeys.json
-- Operator 2 BN254: ./keys/operators/operator2-bn254-pubkeys.json
-- Operator 3 BN254: ./keys/operators/operator3-bn254-pubkeys.json
 
 All components have been initialized and connected through the opt-in handshake process.
 Token delegation has been set up with 500 tokens delegated to each operator.
@@ -1040,8 +947,6 @@ Key Files Location:
 - NCN Admin: ./keys/ncn/ncn-admin.json
 - Vault Admin: ./keys/vault/vault-admin.json
 - Operator Admins: ./keys/operators/operator{1,2,3}-admin.json
-- Operator BN254 Private Keys: ./keys/operators/operator{1,2,3}-bn254-private.key
-- Operator BN254 Public Keys: ./keys/operators/operator{1,2,3}-bn254-pubkeys.json
 
 Network is ready for testing and development.
 EOF
