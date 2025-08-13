@@ -60,6 +60,8 @@ wait_for_validator() {
 main() {
 	log_info "Starting run.sh execution sequence..."
 
+	pkill -f solana-test-validator &
+
 	# Step 1: Run validator.sh - This starts the Solana test validator with required programs
 	log_info "Step 1: Running validator.sh to start Solana test validator..."
 	if [ -f "./validator.sh" ]; then

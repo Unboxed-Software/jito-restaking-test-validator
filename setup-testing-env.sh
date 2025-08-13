@@ -440,7 +440,7 @@ generate_keypairs() {
 	else
 		log_info "Generating new NCN admin keypair (no passphrase)..."
 
-		retry_command "solana-keygen new --outfile 'keys/ncn/ncn-admin.json' --no-bip39-passphrase --force" "Wrote new keypair"
+		retry_command "solana-keygen new --outfile 'keys/ncn/ncn-admin.json' --no-bip39-passphrase" "Wrote new keypair"
 
 		log_info "Funding newly created NCN admin keypair..."
 		check_and_fund_keypair "keys/ncn/ncn-admin.json" "NCN admin keypair"
@@ -642,14 +642,6 @@ create_spl_token() {
 	log_info "=== STEP 8: CREATING SPL TOKEN FOR VAULT OPERATIONS ==="
 	log_info "Setting up SPL token to represent the underlying restaked asset..."
 
-	# Check if token has already been created to avoid duplicates
-	if [[ -f "./keys/vault/token_address.txt" ]]; then
-		TOKEN_ADDRESS=$(cat ./keys/vault/token_address.txt)
-		log_warning "Token address file already exists: $TOKEN_ADDRESS"
-		log_info "Skipping token creation, using existing token for vault operations"
-		return 0
-	fi
-
 	# Create new SPL token
 	log_info "Creating new SPL token using default wallet as mint authority..."
 	local output
@@ -681,7 +673,7 @@ create_spl_token() {
 	log_info "Creating associated token account for vault admin..."
 	log_info "This account will hold the tokens owned by the vault admin"
 
-	retry_command "spl-token create-account $token_address --owner ./keys/vault/vault-admin.json --fee-payer ~/.config/solana/id.json" "Creating account"
+	retry_command "spl-token create-account $token_address --owner ./keys/vault/vault-admin.json" "Creating account"
 
 	log_success "Token account created for vault admin"
 
@@ -689,7 +681,7 @@ create_spl_token() {
 	log_info "Minting initial token supply to vault admin..."
 	log_info "Mint amount: 1,000,000 tokens"
 
-	retry_command "spl-token mint $token_address 1000000 --recipient-owner ./keys/vault/vault-admin.json --fee-payer ~/.config/solana/id.json" "Signature:"
+	retry_command "spl-token mint $token_address 1000000 --recipient-owner ./keys/vault/vault-admin.json" "Signature:"
 
 	log_success "Tokens minted successfully to vault admin"
 
