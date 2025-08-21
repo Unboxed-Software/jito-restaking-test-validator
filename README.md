@@ -41,6 +41,8 @@ spl-token --version
 
 ### 4. Jito Restaking CLI
 
+Make sure you are on version 1.0.0
+
 ```bash
 # Clone the Jito Restaking repository
 git clone https://github.com/jito-foundation/restaking.git
@@ -181,17 +183,17 @@ Once setup is complete, you can:
    ```bash
    # Check validator status
    solana cluster-version -ul
-   
+
    # Check account balances
    solana balance -ul
    ```
 
-3. **Test Time-Dependent Features**:
+2. **Test Time-Dependent Features**:
 
    ```bash
    # Advance by specific number of slots
    ./rerun-validator.sh 100000  # ~100k slots forward
-   
+
    # Advance by full epoch
    ./rerun-validator.sh 432000  # ~1 epoch forward
    ```
